@@ -1,75 +1,96 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Bed Room 1</title>
-<meta charset="utf-8">
-<meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
-<style> @-ms-viewport { width: device-width; } </style>
-<link rel="stylesheet" href="vendor/reset.min.css">
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marzipano VR with Hotspots</title>
+    <script src="https://www.marzipano.net/dist/marzipano.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #vr-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px;
+            background-color: #000;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 10;
+        }
+        .hotspot {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: url('hotspot_icon.png') no-repeat center center;
+            background-size: cover;
+            cursor: pointer;
+        }
+    </style>
 </head>
-<body class="multiple-scenes ">
+<body>
+    <div id="vr-button">Enter VR</div>
+    <div id="pano"></div>
 
-<div id="pano"></div>
+    <script>
+        var viewer = new Marzipano.Viewer(document.getElementById('pano'));
+        var stage = viewer.stage();
 
-<div id="sceneList">
-  <ul class="scenes">
-    
-      <a href="javascript:void(0)" class="scene" data-id="0-bed-room-1">
-        <li class="text">Bed Room 1</li>
-      </a>
-    
-      <a href="javascript:void(0)" class="scene" data-id="1-bed-room2">
-        <li class="text">Bed room2</li>
-      </a>
-    
-  </ul>
-</div>
+        var sceneData = [
+            { id: 'livingroom', image: 'livingroom.jpg', hotspots: [
+                { position: { yaw: 1, pitch: 1 }, scene: 'bedroom' },
+                { position: { yaw: -1, pitch: 1 }, scene: 'kitchen' }
+            ]},
+            { id: 'kitchen', image: 'kitchen.jpg', hotspots: [
+                { position: { yaw: 1, pitch: 1 }, scene: 'livingroom' }
+            ]},
+            { id: 'bedroom', image: 'bedroom.jpg', hotspots: [
+                { position: { yaw: -1, pitch: 1 }, scene: 'livingroom' }
+            ]}
+        ];
 
-<div id="titleBar">
-  <h1 class="sceneName"></h1>
-</div>
+        var currentScene = sceneData[0]; // default to living room
 
-<a href="javascript:void(0)" id="autorotateToggle">
-  <img class="icon off" src="img/play.png">
-  <img class="icon on" src="img/pause.png">
-</a>
+        function loadScene(scene) {
+            currentScene = scene;
+            var source = Marzipano.ImageUrlSource.fromString(scene.image);
+            var geometry = new Marzipano.CubeGeometry([{ tileSize: 512, size: 1024 }]);
+            var view = new Marzipano.RectilinearView();
 
-<a href="javascript:void(0)" id="fullscreenToggle">
-  <img class="icon off" src="img/fullscreen.png">
-  <img class="icon on" src="img/windowed.png">
-</a>
+            var pano = viewer.createScene({ source: source, geometry: geometry, view: view });
+            stage.clear();
+            pano.mount();
+            createHotspots(pano, scene.hotspots);
+        }
 
-<a href="javascript:void(0)" id="sceneListToggle">
-  <img class="icon off" src="img/expand.png">
-  <img class="icon on" src="img/collapse.png">
-</a>
+        function createHotspots(pano, hotspots) {
+            hotspots.forEach(function(hotspot) {
+                var hotspotDiv = document.createElement('div');
+                hotspotDiv.className = 'hotspot';
+                pano.addHotspot(hotspotDiv, new Marzipano.EquirectangularCoordinates(hotspot.position.yaw, hotspot.position.pitch));
 
-<a href="javascript:void(0)" id="viewUp" class="viewControlButton viewControlButton-1">
-  <img class="icon" src="img/up.png">
-</a>
-<a href="javascript:void(0)" id="viewDown" class="viewControlButton viewControlButton-2">
-  <img class="icon" src="img/down.png">
-</a>
-<a href="javascript:void(0)" id="viewLeft" class="viewControlButton viewControlButton-3">
-  <img class="icon" src="img/left.png">
-</a>
-<a href="javascript:void(0)" id="viewRight" class="viewControlButton viewControlButton-4">
-  <img class="icon" src="img/right.png">
-</a>
-<a href="javascript:void(0)" id="viewIn" class="viewControlButton viewControlButton-5">
-  <img class="icon" src="img/plus.png">
-</a>
-<a href="javascript:void(0)" id="viewOut" class="viewControlButton viewControlButton-6">
-  <img class="icon" src="img/minus.png">
-</a>
+                hotspotDiv.addEventListener('click', function() {
+                    var nextScene = sceneData.find(function(scene) {
+                        return scene.id === hotspot.scene;
+                    });
+                    if (nextScene) {
+                        loadScene(nextScene);
+                    }
+                });
+            });
+        }
 
-<script src="vendor/screenfull.min.js" ></script>
-<script src="vendor/bowser.min.js" ></script>
-<script src="vendor/betagen.js" ></script>
+        document.getElementById('vr-button').addEventListener('click', function() {
+            viewer.enterVR();
+        });
 
-<script src="data.js"></script>
-<script src="index.js"></script>
+        // Initial scene load
+        loadScene(currentScene);
 
+    </script>
 </body>
 </html>
